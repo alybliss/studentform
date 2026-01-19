@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Form & Table</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{
+    background:#f5f7fa;
+    font-family:'Times New Roman', Times, serif;
+}
+
+/* Highlight minors */
+.minor td {
+    background-color: #f9c7c7 !important;
+}
+.minor:hover td {
+    background-color: #f8d7da !important;
+}
+
+/* Table wrapper */
+.table-wrapper{
+    max-height:400px;
+    overflow:auto;
+}
+
+/* Sticky header */
+.table-wrapper table th{
+    position: sticky;
+    top:0;
+    background: #fff;
+    z-index:1;
+}
+
+/* Buttons */
+#submitBtn{
+    background:#90ee90;
+    border:1px solid #000;
+}
+#submitBtn:hover{ background:#baf0ba; }
+
+.btn-warning, .btn-danger{
+    border:1px solid #000;
+}
+
+/* 🔹 Mobile adjustments */
+@media (max-width: 576px){
+    h3{
+        font-size:1.2rem;
+    }
+    table{
+        font-size:0.85rem;
+    }
+    .action-btns button{
+        display:block;
+        width:100%;
+        margin-bottom:5px;
+    }
+}
+</style>
+</head>
+
+<body class="container mt-3">
+
+<h3 class="text-center mb-4">Interactive Student Form</h3>
+
+<!-- FORM -->
+<div class="card mb-4">
+<div class="card-body">
+<form id="studentForm">
+
+<div class="row mb-3">
+    <div class="col-12 col-md-4 mb-2">
+        <label>Last Name</label>
+        <input type="text" id="lastName" class="form-control">
+    </div>
+    <div class="col-12 col-md-4 mb-2">
+        <label>First Name</label>
+        <input type="text" id="firstName" class="form-control">
+    </div>
+    <div class="col-12 col-md-4">
+        <label>Middle Name</label>
+        <input type="text" id="middleName" class="form-control">
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12 col-md-4 mb-2">
+        <label>Birthdate</label>
+        <input type="date" id="birthdate" class="form-control">
+    </div>
+    <div class="col-12 col-md-4 mb-2">
+        <label>Course</label>
+        <select id="course" class="form-select">
+            <option value="">Select Course</option>
+            <option>BSIT</option>
+            <option>BSCM</option>
+            <option>BSTM</option>
+            <option>BSHM</option>
+            <option>BSM</option>
+            <option>BSA</option>
+            
+        </select>
+    </div>
+    <div class="col-12 col-md-4">
+        <label>Year Level</label>
+        <input type="number" id="yearLevel" class="form-control">
+    </div>
+</div>
+
+<div class="text-center">
+    <button type="submit" id="submitBtn" class="btn px-5">
+        Add Student
+    </button>
+</div>
+
+</form>
+</div>
+</div>
+
+<!-- TABLE -->
+<h3 class="text-center mb-3">Student List</h3>
+
+<input type="text" id="searchInput" class="form-control mb-2"
+placeholder="Search by name..." onkeyup="renderTable()">
+
+<div class="table-wrapper table-responsive">
+<table class="table table-bordered table-striped text-center align-middle">
+<thead>
+<tr>
+    <th>#</th>
+    <th>
+        Name (L, F, M)
+        <button class="btn btn-sm btn-light mt-1" onclick="sortTable()">Sort A–Z</button>
+    </th>
+    <th>Age</th>
+    <th>Course</th>
+    <th>Year</th>
+    <th>Actions</th>
+</tr>
+</thead>
+<tbody id="studentTable"></tbody>
+</table>
+</div>
+
+<script>
+let students = [];
+let editIndex = null;
+let sortAsc = true;
+
+studentForm.addEventListener("submit", function(e){
+    e.preventDefault();
+
+    const lname = lastName.value.trim();
+    const fname = firstName.value.trim();
+    const mname = middleName.value.trim();
+    const bdate = birthdate.value;
+    const courseVal = course.value;
+    const year = yearLevel.value;
+
+    if(!lname || !fname || !bdate || !courseVal || !year){
+        alert("Please fill in all required fields.");
+        return;
+    }
+
+    const student = { lname, fname, mname, bdate, course: courseVal, year };
+
+    if(editIndex === null){
+        students.push(student);
+    } else {
+        students[editIndex] = student;
+        editIndex = null;
+        submitBtn.textContent = "Add Student";
+    }
+
+    this.reset();
+    renderTable();
+});
+
+function renderTable(){
+    const filter = searchInput.value.toLowerCase();
+    studentTable.innerHTML = "";
+
+    students
+    .filter(s => (`${s.lname}, ${s.fname} ${s.mname}`).toLowerCase().includes(filter))
+    .forEach((s, index) => {
+        const age = calculateAge(s.bdate);
+        const row = document.createElement("tr");
+        if(age < 18) row.classList.add("minor");
+
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${s.lname}, ${s.fname} ${s.mname}</td>
+            <td>${age}</td>
+            <td>${s.course}</td>
+            <td>${s.year}</td>
+            <td class="action-btns">
+                <button class="btn btn-warning btn-sm" onclick="editStudent(${index})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteStudent(${index})">Delete</button>
+            </td>
+        `;
+        studentTable.appendChild(row);
+    });
+}
+
+function editStudent(index){
+    const s = students[index];
+    lastName.value = s.lname;
+    firstName.value = s.fname;
+    middleName.value = s.mname;
+    birthdate.value = s.bdate;
+    course.value = s.course;
+    yearLevel.value = s.year;
+
+    editIndex = index;
+    submitBtn.textContent = "Update Student";
+}
+
+function deleteStudent(index){
+    if(confirm("Delete this student?")){
+        students.splice(index,1);
+        renderTable();
+    }
+}
+
+function calculateAge(birthdate){
+    const birth = new Date(birthdate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    if(today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())) age--;
+    return age;
+}
+
+function sortTable(){
+    students.sort((a,b)=>{
+        const A = `${a.lname}, ${a.fname}`.toLowerCase();
+        const B = `${b.lname}, ${b.fname}`.toLowerCase();
+        return sortAsc ? A.localeCompare(B) : B.localeCompare(A);
+    });
+    sortAsc = !sortAsc;
+    renderTable();
+}
+</script>
+
+</body>
+</html>
